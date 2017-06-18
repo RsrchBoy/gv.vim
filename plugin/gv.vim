@@ -128,9 +128,18 @@ endfunction
 function! s:syntax()
   setf GV
   syn clear
-  syn match gvInfo    /^[^0-9]*\zs[0-9-]\+\s\+[a-f0-9]\+ / contains=gvDate,gvSha nextgroup=gvMessage,gvMeta
+  " syn match gvInfo    /^[^0-9]*\zs[0-9-]\+\s\+[a-f0-9]\+ / contains=gvDate,gvSha nextgroup=gvMessage,gvMeta
+  syn match gvInfo    /^[^0-9]*\zs[0-9-]\+\s\+[a-f0-9]\+\(\/[GNUXYEN]\|\) / contains=gvDate,gvSha,gvSignStatus nextgroup=gvMessage,gvMeta
+  " syn match gvInfo    /^[^0-9]*\zs[0-9-]\+\s\+[a-f0-9]\+ / contains=gvDate,gvSha,gvSignStatus nextgroup=gvMessage,gvMeta
+  " syn region gvInfo    start=/^\(*\|[| ]+*\)[| ]+ /rs=e end=/\\[A-Z] / contains=gvDate,gvSha,gvSignStatus nextgroup=gvMessage,gvMeta
   syn match gvDate    /\S\+ / contained
+  " syn match gvShaRegion /[a-f0-9]\{6,}\/[GNUXYEN]/
+  " syn match gvSha     /[a-f0-9]\{6,}/ contained nextgroup=gvSignStatus
   syn match gvSha     /[a-f0-9]\{6,}/ contained
+  syn match gvSignStatus /\/[GNUXYEN]/ contained contains=gvSignGood,gvSignBad,gvSignIndifferent
+  syn keyword gvSignBad B contained
+  syn keyword gvSignGood G contained
+  syn keyword gvSignIndifferent N E Y X U contained
   syn match gvMessage /.* \ze(.\{-})$/ contained contains=gvTag,gvGitHub,gvJira nextgroup=gvAuthor
   syn match gvAuthor  /.*$/ contained
   syn match gvMeta    /([^)]\+) / contained contains=gvTag nextgroup=gvMessage
@@ -144,6 +153,13 @@ function! s:syntax()
   hi def link gvJira   Label
   hi def link gvMeta   Conditional
   hi def link gvAuthor String
+
+  hi def link gvSignStatus Delimiter
+  hi def link gvSignGood   Comment
+  " hi def link gvSignGood   Delimiter
+  hi def link gvSignBad    Error
+  " hi def link gvSignBad    diffRemoved
+  hi def link gvSignIndifferent Delimiter
 
   syn match gvAdded     "^\W*\zsA\t.*"
   syn match gvDeleted   "^\W*\zsD\t.*"
@@ -251,8 +267,9 @@ function! s:log_opts(fugitive_repo, bang, visual, line1, line2)
 endfunction
 
 function! s:list(fugitive_repo, log_opts)
-  let default_opts = ['--color=never', '--date=short', '--format=%cd %h%d %s (%an)']
-  let git_args = ['log'] + default_opts + a:log_opts
+  " let default_opts = ['--color=never', '--date=short', '--format=%cd %h%d %s (%an sig:%G?)']
+  let default_opts = ['--color=never', '--date=short', '--format=%cd %h/%G?%d %s (%an)']
+  let git_args = ['-c', 'log.showSignature=false', 'log'] + default_opts + a:log_opts
   let git_log_cmd = call(a:fugitive_repo.git_command, git_args, a:fugitive_repo)
   call s:fill(git_log_cmd)
   setlocal nowrap tabstop=8 cursorline iskeyword+=#
