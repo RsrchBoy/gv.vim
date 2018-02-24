@@ -236,6 +236,9 @@ endfunction
 function! s:check_buffer(fugitive_repo, current)
   if empty(a:current)
     throw 'untracked buffer'
+  elseif get(b:, 'netrw_curdir') !=# ''
+      " in a netrw; if we're here fugitive should work
+      return
   elseif !s:tracked(a:fugitive_repo, a:current)
     throw a:current.' is untracked'
   endif
